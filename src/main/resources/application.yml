@@ -1,0 +1,44 @@
+## server
+server:
+  port: 8080
+
+## spring
+spring:
+  application:
+    name: exam-game-dashboard-api
+  main:
+    banner-mode: log
+  rsocket:
+    server:
+      port: ${chat.port}
+      transport: websocket
+  r2dbc:
+    url: r2dbc:postgresql://${postgresql_host}/${postgresql_database_name}
+    username: ${postgresql_username}
+    password: ${postgresql_password}
+
+
+## chat
+chat:
+  rs-host: ${chat_rs_host:localhost}
+  port: ${chat_rs_port:8081}
+
+## logging
+logging:
+  charset:
+    console: UTF-8
+    file: UTF-8
+  file:
+    name: ${logs_path}/${spring.application.name}.log
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} ${LOG_LEVEL_PATTERN:%-5p} ${PID} --- [%15.15t] %-40.40logger{39} :%06L : %m%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} ${LOG_LEVEL_PATTERN:%-5p} ${PID} --- [%15.15t] %-40.40logger{39} :%06L : %m%n"
+  logback:
+    rollingpolicy:
+      file-name-pattern: "${logs_path}/%d{yyyy-MM-dd}/${spring.application.name}.%d{yyyy-MM-dd}.%i.log"
+      max-file-size: 10MB
+      max-history: ${log_max_history:10}
+  level:
+    root: info
+    web: debug
+    org.bobpark: ${logs_bobpark_level:debug}
