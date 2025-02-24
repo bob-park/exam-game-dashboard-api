@@ -5,14 +5,18 @@ import static org.apache.commons.lang3.ObjectUtils.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import lombok.ToString.Exclude;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Table;
 
 import org.apache.commons.lang3.StringUtils;
@@ -33,6 +37,10 @@ public class Game extends BaseEntity {
 
     private LocalDate gameDate;
 
+    @Exclude
+    @Transient
+    private List<GameDashboard> gameDashboards = new ArrayList<>();
+
     @Builder
     private Game(Long id, String name, String description, LocalDate gameDate) {
 
@@ -44,4 +52,12 @@ public class Game extends BaseEntity {
         this.description = description;
         this.gameDate = defaultIfNull(gameDate, LocalDate.now());
     }
+
+    public void addGameDashboard(GameDashboard gameDashboard) {
+
+        gameDashboard.updateGame(this);
+
+        getGameDashboards().add(gameDashboard);
+    }
+
 }
