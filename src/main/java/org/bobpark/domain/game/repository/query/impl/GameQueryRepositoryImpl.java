@@ -24,7 +24,6 @@ public class GameQueryRepositoryImpl implements GameQueryRepository {
     public Mono<Page<Game>> search(SearchGameRequest searchRequest, Pageable pageable) {
 
         // select
-
         String countQuery = "select count(id) as count "
             + "from games ";
 
