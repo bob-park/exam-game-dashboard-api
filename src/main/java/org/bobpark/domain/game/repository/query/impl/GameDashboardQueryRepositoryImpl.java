@@ -1,5 +1,7 @@
 package org.bobpark.domain.game.repository.query.impl;
 
+import java.time.LocalDate;
+
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.r2dbc.core.DatabaseClient;
@@ -20,7 +22,7 @@ public class GameDashboardQueryRepositoryImpl implements GameDashboardQueryRepos
     public Mono<GameDashboard> getWithGame(long id) {
 
         String query =
-            "select gd.id, gd.home_score, gd.away_score, gd.created_date, gd.last_modified_date, game.id, game.name, game.destcription from game_dashboards gd join games game on gd.game_id = game.id "
+            "select gd.id, gd.home_score, gd.away_score, gd.created_date, gd.last_modified_date, game.id as game_id, game.name as game_name, game.description as game_description, game.game_date as game_date from game_dashboards gd join games game on gd.game_id = game.id "
                 + "where gd.id = " + id;
 
         return client.sql(query)
@@ -28,16 +30,18 @@ public class GameDashboardQueryRepositoryImpl implements GameDashboardQueryRepos
                 (row, metadata) -> {
                     GameDashboard result =
                         GameDashboard.builder()
-                            .id(row.get("gd.id", Long.class))
-                            .homeScore(row.get("gd.home_score", Long.class))
-                            .awayScore(row.get("gd.away_score", Long.class))
+                            .id(row.get("id", Long.class))
+                            .homeScore(row.get("home_score", Long.class))
+                            .awayScore(row.get("away_score", Long.class))
+                            .gameId(row.get("game_id", Long.class))
                             .build();
 
                     result.updateGame(
                         Game.builder()
-                            .id(row.get("game.id", Long.class))
-                            .name(row.get("game.name", String.class))
-                            .description(row.get("game.description", String.class))
+                            .id(row.get("game_id", Long.class))
+                            .name(row.get("game_name", String.class))
+                            .description(row.get("game_description", String.class))
+                            .gameDate(row.get("game_date", LocalDate.class))
                             .build());
 
                     return result;

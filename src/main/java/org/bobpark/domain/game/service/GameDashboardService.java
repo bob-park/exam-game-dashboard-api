@@ -103,7 +103,7 @@ public class GameDashboardService {
 
     public Mono<GameDashboardResponse> setCurrent(long id) {
 
-        return gameDashboardRepository.findById(id)
+        return gameDashboardRepository.getWithGame(id)
             .map(GameDashboardResponse::from)
             .doOnSuccess(item -> current = item);
     }
@@ -115,7 +115,7 @@ public class GameDashboardService {
             .doOnSuccess((count) -> {
                 log.debug("updated game dashboard. (id={})", id);
             })
-            .zipWith(gameDashboardRepository.findById(id))
+            .zipWith(gameDashboardRepository.getWithGame(id))
             .map(Tuple2::getT2)
             .map(GameDashboardResponse::from)
             .doOnNext(item -> current = item)
