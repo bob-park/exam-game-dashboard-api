@@ -1,0 +1,10 @@
+services:
+  exam-game-dashboard-api:
+    container_name: exam-game-dashboard-api
+    image: ghcr.io/bob-park/exam-game-dashboard-api
+    build:
+      dockerfile: ./Dockerfile
+      x-bake:
+        platforms:
+          - linux/amd64
+          - linux/arm64
