@@ -26,7 +26,7 @@ import org.bobpark.domain.game.repository.GameRepository;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-@Transactional(readOnly = true)
+
 public class GameDashboardService {
 
     private GameDashboardResponse current;
@@ -60,6 +60,7 @@ public class GameDashboardService {
             });
     }
 
+    @Transactional(readOnly = true)
     public Flux<GameDashboardResponse> getAllByGameId(Long gameId) {
         return gameDashboardRepository.findAllByGameId(gameId)
             .map(GameDashboardResponse::from);
@@ -85,6 +86,7 @@ public class GameDashboardService {
             .subscribe();
     }
 
+    @Transactional(readOnly = true)
     public Mono<GameDashboardResponse> getCurrent() {
         return Mono.justOrEmpty(current)
             .publishOn(Schedulers.boundedElastic())
@@ -101,11 +103,21 @@ public class GameDashboardService {
                         .subscribe());
     }
 
+    @Transactional(readOnly = true)
     public Mono<GameDashboardResponse> setCurrent(long id) {
 
         return gameDashboardRepository.getWithGame(id)
             .map(GameDashboardResponse::from)
-            .doOnSuccess(item -> current = item);
+            .doOnSuccess(item -> current = item)
+            .publishOn(Schedulers.boundedElastic())
+            .doOnNext(item ->
+                Flux.fromIterable(requesters)
+                    .publishOn(Schedulers.boundedElastic())
+                    .doOnNext(ea -> ea.route("")
+                        .data(item)
+                        .send()
+                        .subscribe())
+                    .subscribe());
     }
 
     @Transactional
