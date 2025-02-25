@@ -10,5 +10,5 @@ import org.bobpark.domain.game.repository.query.GameDashboardQueryRepository;
 public interface GameDashboardRepository extends ReactiveCrudRepository<GameDashboard, Long>,
     GameDashboardQueryRepository {
 
-    Flux<GameDashboard> findByGameId(Long gameId);
+    Flux<GameDashboard> findAllByGameId(Long gameId);
 }

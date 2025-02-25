@@ -1,18 +1,24 @@
 package org.bobpark.domain.game.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.messaging.rsocket.RSocketRequester;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import org.bobpark.domain.game.entity.Game;
 import org.bobpark.domain.game.entity.GameDashboard;
 import org.bobpark.domain.game.model.CreateGameRequest;
 import org.bobpark.domain.game.model.GameDashboardResponse;
+import org.bobpark.domain.game.model.UpdateGameDashboardRequest;
 import org.bobpark.domain.game.repository.GameDashboardRepository;
 import org.bobpark.domain.game.repository.GameRepository;
 
@@ -21,6 +27,10 @@ import org.bobpark.domain.game.repository.GameRepository;
 @Service
 @Transactional(readOnly = true)
 public class GameDashboardService {
+
+    private GameDashboardResponse current;
+
+    private final List<RSocketRequester> requesters = new ArrayList<>();
 
     private final GameRepository gameRepository;
     private final GameDashboardRepository gameDashboardRepository;
@@ -49,8 +59,81 @@ public class GameDashboardService {
             });
     }
 
-    public Flux<GameDashboardResponse> getAllByGameId(Long gameId) {
-        return gameDashboardRepository.findByGameId(gameId)
+    public Mono<GameDashboardResponse> getAllByGameId(Long gameId) {
+        return gameDashboardRepository.findById(gameId)
             .map(GameDashboardResponse::from);
     }
+
+    public void onConnect(RSocketRequester requester) {
+        requester.rsocket()
+            .onClose()
+            .doFirst(() -> {
+                requesters.add(requester);
+
+                log.debug("connected...");
+            })
+            .doOnError(error -> {
+                log.error("rsocket error - {}", error.getMessage(), error);
+            })
+            .doFinally(consumer -> {
+                if (requesters.contains(requester)) {
+                    requesters.remove(requester);
+                    log.debug("disconnected...");
+                }
+            })
+            .subscribe();
+    }
+
+    public Mono<GameDashboardResponse> getCurrent() {
+        return Mono.justOrEmpty(current)
+            .publishOn(Schedulers.boundedElastic())
+            .doOnNext(
+                item ->
+                    Flux.fromIterable(requesters)
+                        .publishOn(Schedulers.boundedElastic())
+                        .doOnNext(
+                            ea ->
+                                ea.route("")
+                                    .data(item)
+                                    .send()
+                                    .subscribe())
+                        .subscribe());
+    }
+
+    public Mono<GameDashboardResponse> setCurrent(long id) {
+
+        return gameDashboardRepository.findById(id)
+            .map(GameDashboardResponse::from)
+            .doOnSuccess(item -> current = item);
+    }
+
+    @Transactional
+    public Mono<GameDashboardResponse> updateDashboard(long id, UpdateGameDashboardRequest updateRequest) {
+
+        return gameDashboardRepository.updateScore(id, updateRequest)
+            .doOnSuccess((count) -> {
+                log.debug("updated game dashboard. (id={})", id);
+            })
+            .map(item -> {
+                current =
+                    current.toBuilder()
+                        .homeScore(current.homeScore() + updateRequest.homeScore())
+                        .awayScore(current.awayScore() + updateRequest.awayScore())
+                        .build();
+
+                return current;
+            })
+            .publishOn(Schedulers.boundedElastic())
+            .doOnNext(item ->
+                Flux.fromIterable(requesters)
+                    .publishOn(Schedulers.boundedElastic())
+                    .doOnNext(ea -> ea.route("")
+                        .data(item)
+                        .send()
+                        .subscribe())
+                    .subscribe()
+            );
+
+    }
+
 }

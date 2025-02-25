@@ -8,6 +8,7 @@ import reactor.core.publisher.Mono;
 
 import org.bobpark.domain.game.entity.Game;
 import org.bobpark.domain.game.entity.GameDashboard;
+import org.bobpark.domain.game.model.UpdateGameDashboardRequest;
 import org.bobpark.domain.game.repository.query.GameDashboardQueryRepository;
 
 @RequiredArgsConstructor
@@ -43,5 +44,23 @@ public class GameDashboardQueryRepositoryImpl implements GameDashboardQueryRepos
                 }
             )
             .one();
+    }
+
+    @Override
+    public Mono<Long> updateScore(long id, UpdateGameDashboardRequest updateRequest) {
+
+        String query =
+            "update game_dashboards "
+                // set
+                + "set home_score = home_score + :home_score, "
+                + "away_score = away_score + :away_score  "
+                // where
+                + "where id = :id";
+
+        return client.sql(query)
+            .bind("id", id)
+            .bind("home_score", updateRequest.homeScore())
+            .bind("away_score", updateRequest.awayScore())
+            .fetch().rowsUpdated();
     }
 }

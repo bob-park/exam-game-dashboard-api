@@ -53,4 +53,12 @@ public class GameDashboard extends BaseEntity {
         this.gameId = game.getId();
     }
 
+    public void updateHomeScore(long homeScore) {
+        this.homeScore = homeScore;
+    }
+
+    public void updateAwayScore(long awayScore) {
+        this.awayScore = awayScore;
+    }
+
 }
