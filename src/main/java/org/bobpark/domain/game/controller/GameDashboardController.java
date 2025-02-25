@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.bobpark.domain.game.model.CreateGameRequest;
@@ -34,19 +35,19 @@ public class GameDashboardController {
     }
 
     @GetMapping(path = "")
-    public Mono<GameDashboardResponse> getAllByGameId(@PathVariable long gameId) {
+    public Flux<GameDashboardResponse> getAllByGameId(@PathVariable long gameId) {
         return gameDashboardService.getAllByGameId(gameId);
     }
 
-    @PutMapping(path = "")
-    public Mono<GameDashboardResponse> updateDashboard(@PathVariable long gameId,
+    @PutMapping(path = "{dashboardId:\\d+}")
+    public Mono<GameDashboardResponse> updateDashboard(@PathVariable long gameId, @PathVariable long dashboardId,
         @RequestBody UpdateGameDashboardRequest updateRequest) {
-        return gameDashboardService.updateDashboard(gameId, updateRequest);
+        return gameDashboardService.updateDashboard(dashboardId, updateRequest);
     }
 
-    @PostMapping(path = "current")
-    public Mono<GameDashboardResponse> setCurrent(@PathVariable long gameId) {
-        return gameDashboardService.setCurrent(gameId);
+    @PostMapping(path = "{dashboardId:\\d+}/current")
+    public Mono<GameDashboardResponse> setCurrent(@PathVariable long gameId, @PathVariable long dashboardId) {
+        return gameDashboardService.setCurrent(dashboardId);
     }
 
 }

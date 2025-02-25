@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.function.Tuple2;
 
 import org.bobpark.domain.game.entity.Game;
 import org.bobpark.domain.game.entity.GameDashboard;
@@ -59,8 +60,8 @@ public class GameDashboardService {
             });
     }
 
-    public Mono<GameDashboardResponse> getAllByGameId(Long gameId) {
-        return gameDashboardRepository.findById(gameId)
+    public Flux<GameDashboardResponse> getAllByGameId(Long gameId) {
+        return gameDashboardRepository.findAllByGameId(gameId)
             .map(GameDashboardResponse::from);
     }
 
@@ -114,15 +115,10 @@ public class GameDashboardService {
             .doOnSuccess((count) -> {
                 log.debug("updated game dashboard. (id={})", id);
             })
-            .map(item -> {
-                current =
-                    current.toBuilder()
-                        .homeScore(current.homeScore() + updateRequest.homeScore())
-                        .awayScore(current.awayScore() + updateRequest.awayScore())
-                        .build();
-
-                return current;
-            })
+            .zipWith(gameDashboardRepository.findById(id))
+            .map(Tuple2::getT2)
+            .map(GameDashboardResponse::from)
+            .doOnNext(item -> current = item)
             .publishOn(Schedulers.boundedElastic())
             .doOnNext(item ->
                 Flux.fromIterable(requesters)
