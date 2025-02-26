@@ -73,6 +73,14 @@ public class GameDashboardService {
                 requesters.add(requester);
 
                 log.debug("connected...");
+
+                if (current != null) {
+                    requester.route("")
+                        .data(current)
+                        .send()
+                        .subscribe();
+                }
+
             })
             .doOnError(error -> {
                 log.error("rsocket error - {}", error.getMessage(), error);
@@ -141,7 +149,8 @@ public class GameDashboardService {
                         .subscribe())
                     .subscribe()
             );
-
     }
+
+
 
 }
